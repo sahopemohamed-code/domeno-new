@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#062921">
+<title>دومينو أونلاين</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== شاشة البداية / اللوبي ===== -->
+  <div id="lobby" class="screen">
+    <div class="lobby-bg-tiles" aria-hidden="true"></div>
+    <div class="lobby-card">
+      <h1 class="logo">دومينو<span class="logo-dot">•</span>اونلاين</h1>
+      <p class="tagline">دومينو عربي أصلي، أونلاين مع أصدقائك أو ضد الذكاء الاصطناعي</p>
+
+      <div class="field">
+        <label for="nameInput">اسمك</label>
+        <input id="nameInput" type="text" maxlength="16" placeholder="اكتب اسمك هنا" autocomplete="off">
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="create">إنشاء غرفة</button>
+        <button class="tab-btn" data-tab="join">الانضمام برمز</button>
+      </div>
+
+      <div class="tab-panel" id="createPanel">
+        <label>هدف النقاط للفوز</label>
+        <div class="chip-row" id="targetChips">
+          <button class="chip active" data-value="101">101</button>
+          <button class="chip" data-value="121">121</button>
+          <button class="chip" data-value="151">151</button>
+          <button class="chip" data-value="201">201</button>
+        </div>
+        <button class="btn-primary" id="createBtn">
+          <span>إنشاء غرفة جديدة</span>
+        </button>
+        <p class="hint">سيتم ملء المقاعد الفاضية ببوتات، وبإمكانك مشاركة رمز الغرفة لاستبدالها بأصدقائك في أي وقت.</p>
+      </div>
+
+      <div class="tab-panel hidden" id="joinPanel">
+        <label for="codeInput">رمز الغرفة</label>
+        <input id="codeInput" type="text" maxlength="5" placeholder="ABCDE" class="code-input" autocomplete="off">
+        <button class="btn-primary" id="joinBtn">
+          <span>انضمام للغرفة</span>
+        </button>
+      </div>
+
+      <p class="error-msg hidden" id="lobbyError"></p>
+    </div>
+  </div>
+
+  <!-- ===== شاشة اللعب ===== -->
+  <div id="game" class="screen hidden">
+
+    <div class="topbar">
+      <button class="icon-btn" id="leaveBtn" title="خروج">✕</button>
+      <div class="score-pill team-a">
+        <span class="score-label">أنتم</span>
+        <span class="score-val" id="scoreA">0</span>
+      </div>
+      <div class="mid-info">
+        <button class="room-code" id="roomCodeDisplay" title="اضغط للنسخ">—</button>
+        <div class="round-info" id="roundInfo">جولة 1 · هدف 101</div>
+      </div>
+      <div class="score-pill team-b">
+        <span class="score-label">الخصم</span>
+        <span class="score-val" id="scoreB">0</span>
+      </div>
+      <div class="spacer"></div>
+    </div>
+
+    <div class="table">
+      <div class="seat seat-top" id="seatTop">
+        <div class="avatar-wrap">
+          <div class="avatar" id="avatarTop">🐯</div>
+          <div class="turn-ring"></div>
+        </div>
+        <div class="seat-info">
+          <div class="seat-name" id="nameTop">—</div>
+          <div class="mini-hand" id="miniHandTop"></div>
+        </div>
+      </div>
+
+      <div class="seat seat-left" id="seatLeft">
+        <div class="avatar-wrap">
+          <div class="avatar" id="avatarLeft">🐺</div>
+          <div class="turn-ring"></div>
+        </div>
+        <div class="seat-info">
+          <div class="seat-name" id="nameLeft">—</div>
+          <div class="mini-hand vertical" id="miniHandLeft"></div>
+        </div>
+      </div>
+
+      <div class="seat seat-right" id="seatRight">
+        <div class="avatar-wrap">
+          <div class="avatar" id="avatarRight">🦊</div>
+          <div class="turn-ring"></div>
+        </div>
+        <div class="seat-info">
+          <div class="seat-name" id="nameRight">—</div>
+          <div class="mini-hand vertical" id="miniHandRight"></div>
+        </div>
+      </div>
+
+      <div class="board-area">
+        <div class="board-scroll" id="boardScroll">
+          <div class="board" id="board"></div>
+        </div>
+        <div class="drop-zone left hidden" id="dropLeft">◀</div>
+        <div class="drop-zone right hidden" id="dropRight">▶</div>
+        <div class="empty-board-hint" id="emptyHint">اضغط "بدء اللعب" لتوزيع القطع</div>
+      </div>
+    </div>
+
+    <div class="bottom-area">
+      <div class="my-row">
+        <div class="avatar-wrap">
+          <div class="avatar" id="avatarBottom">🦁</div>
+          <div class="turn-ring"></div>
+        </div>
+        <div class="seat-name" id="nameBottom">أنا</div>
+        <button class="btn-pass hidden" id="passBtn">تمرير</button>
+        <button class="btn-start hidden" id="startBtn">بدء اللعب</button>
+      </div>
+      <div class="hand-scroll" id="handScroll">
+        <div class="hand" id="hand"></div>
+      </div>
+    </div>
+
+    <!-- نافذة نتيجة الجولة -->
+    <div class="modal-overlay hidden" id="roundModal">
+      <div class="modal-card">
+        <div id="roundModalContent"></div>
+        <p class="modal-sub">الجولة التالية تبدأ بعد لحظات...</p>
+      </div>
+    </div>
+
+    <!-- نافذة نهاية اللعبة -->
+    <div class="modal-overlay hidden" id="gameOverModal">
+      <div class="modal-card">
+        <div id="gameOverContent"></div>
+        <button class="btn-primary" id="playAgainBtn">لعب من جديد</button>
+        <button class="btn-secondary" id="backToLobbyBtn">العودة للقائمة الرئيسية</button>
+      </div>
+    </div>
+
+    <div class="toast hidden" id="toast"></div>
+  </div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
