@@ -236,4 +236,6 @@ class DominoGame {
   }
 }
 
-module.exports = { DominoGame, createDeck, tilePips, TARGET_SCORES };
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { DominoGame, createDeck, tilePips, TARGET_SCORES };
+}

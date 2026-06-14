@@ -41,7 +41,7 @@
         <button class="btn-primary" id="createBtn">
           <span>إنشاء غرفة جديدة</span>
         </button>
-        <p class="hint">سيتم ملء المقاعد الفاضية ببوتات، وبإمكانك مشاركة رمز الغرفة لاستبدالها بأصدقائك في أي وقت.</p>
+        <p class="hint">سيتم ملء المقاعد الفاضية ببوتات، وبإمكانك مشاركة رمز الغرفة لاستبدالها بأصدقائك في أي وقت. ملاحظة: يجب أن تبقي التطبيق مفتوحاً بما إن الاتصال مباشر بين اللاعبين.</p>
       </div>
 
       <div class="tab-panel hidden" id="joinPanel">
@@ -152,12 +152,25 @@
       </div>
     </div>
 
+    <!-- نافذة انقطاع الاتصال نهائياً -->
+    <div class="modal-overlay hidden" id="connLostModal">
+      <div class="modal-card">
+        <div class="modal-title">⚠️ انقطع الاتصال</div>
+        <div class="modal-detail" id="connLostDetail">تعذر الاتصال بالغرفة.</div>
+        <button class="btn-primary" id="connLostBtn"><span>العودة للقائمة الرئيسية</span></button>
+      </div>
+    </div>
+
+    <!-- شريط إعادة الاتصال -->
+    <div class="conn-banner hidden" id="connBanner">🔄 جاري الاتصال بالغرفة...</div>
+
     <div class="toast hidden" id="toast"></div>
   </div>
 
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
+<script src="gameEngine.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

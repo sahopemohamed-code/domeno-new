@@ -621,6 +621,22 @@ input[type="text"]:focus{
 }
 @keyframes toast-in{ from{ opacity:0; transform: translate(-50%, 10px);} to{ opacity:1; transform: translate(-50%,0);} }
 
+.conn-banner{
+  position:absolute;
+  top: 10px; left:50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.85);
+  border: 1px solid rgba(216,179,92,.5);
+  color: var(--gold-bright);
+  font-size: 13px;
+  font-weight:700;
+  padding: 8px 18px;
+  border-radius: 999px;
+  z-index: 35;
+  white-space: nowrap;
+  animation: toast-in .2s ease-out;
+}
+
 /* ===== شاشات صغيرة جداً ===== */
 @media (max-width: 360px){
   :root{ --tile-w: 50px; --tile-h: 25px; }
