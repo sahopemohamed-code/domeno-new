@@ -35,6 +35,54 @@ function cap(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// ===== تخطيط اللوح بشكل "ثعباني" (snake) يبقى داخل حدود الشاشة دائماً =====
+// يقسّم القطع إلى صفوف أفقية، وكل صف ينعطف بقطعة "زاوية" عمودية إلى الصف
+// التالي بالاتجاه المعاكس (يمين<->شمال)، تماماً كألعاب الدومينو الاحترافية.
+function computeBoardLayout(n, containerW, tileW, tileH, gap) {
+  if (n <= 0) return { positions: [], width: 0, height: tileH };
+
+  const reserve = tileH + gap; // مساحة قطعة الزاوية (تُعرض عمودياً: عرضها = tileH)
+  let perRow = Math.floor((containerW - reserve + gap) / (tileW + gap));
+  perRow = Math.max(1, perRow);
+
+  const colW = tileW + gap;
+  const rowPitch = tileW + gap; // المسافة الرأسية بين الصفوف (تساوي ارتفاع قطعة الزاوية)
+
+  const positions = [];
+  let idx = 0, row = 0;
+  let maxRight = 0, maxBottom = 0;
+
+  while (idx < n) {
+    const remaining = n - idx;
+    const segLen = Math.min(perRow, remaining);
+    const hasCorner = remaining > perRow;
+    const dir = row % 2 === 0 ? 1 : -1; // 1: يسار->يمين، -1: يمين->يسار
+    const shift = dir === -1 ? reserve : 0;
+
+    for (let c = 0; c < segLen; c++) {
+      const col = dir === 1 ? c : (perRow - 1 - c);
+      const x = shift + col * colW;
+      const y = row * rowPitch + (rowPitch - tileH) / 2;
+      positions.push({ x, y, w: tileW, h: tileH, vertical: false });
+      maxRight = Math.max(maxRight, x + tileW);
+      maxBottom = Math.max(maxBottom, y + tileH);
+      idx++;
+    }
+
+    if (hasCorner) {
+      const x = dir === 1 ? perRow * colW : 0;
+      const y = row * rowPitch;
+      positions.push({ x, y, w: tileH, h: tileW, vertical: true });
+      maxRight = Math.max(maxRight, x + tileH);
+      maxBottom = Math.max(maxBottom, y + tileW);
+      idx++;
+    }
+    row++;
+  }
+
+  return { positions, width: maxRight, height: maxBottom };
+}
+
 // ===== عناصر DOM =====
 const lobbyScreen = document.getElementById('lobby');
 const gameScreen = document.getElementById('game');
@@ -845,14 +893,37 @@ function render(data) {
 
 function renderBoard(board) {
   boardEl.innerHTML = '';
-  board.forEach(t => {
-    const orientation = t.a === t.b ? 'vertical' : 'horizontal';
-    boardEl.appendChild(createTileElement(t.a, t.b, { orientation }));
+  const n = board.length;
+
+  if (n === 0) {
+    boardEl.style.width = '100%';
+    boardEl.style.height = '';
+    return;
+  }
+
+  const cs = getComputedStyle(document.documentElement);
+  const tileW = parseFloat(cs.getPropertyValue('--tile-w')) || 56;
+  const tileH = parseFloat(cs.getPropertyValue('--tile-h')) || 28;
+  const gap = 5;
+
+  const containerW = Math.max(boardScroll.clientWidth, tileW + tileH + gap * 2);
+  const containerH = boardScroll.clientHeight || 0;
+
+  const layout = computeBoardLayout(n, containerW, tileW, tileH, gap);
+  const offsetX = Math.max(0, (containerW - layout.width) / 2);
+  const offsetY = containerH ? Math.max(0, (containerH - layout.height) / 2) : 0;
+
+  board.forEach((t, i) => {
+    const p = layout.positions[i];
+    const el = createTileElement(t.a, t.b, { orientation: p.vertical ? 'vertical' : 'horizontal' });
+    el.style.position = 'absolute';
+    el.style.left = Math.round(offsetX + p.x) + 'px';
+    el.style.top = Math.round(offsetY + p.y) + 'px';
+    boardEl.appendChild(el);
   });
-  requestAnimationFrame(() => {
-    const max = boardEl.scrollWidth - boardScroll.clientWidth;
-    boardScroll.scrollLeft = Math.max(0, max / 2);
-  });
+
+  boardEl.style.width = Math.max(containerW, layout.width) + 'px';
+  boardEl.style.height = Math.max(containerH, layout.height) + 'px';
 }
 
 function renderHand(game) {
@@ -917,6 +988,15 @@ function showGameOverModal(game, teamMe) {
   gameOverModal.classList.remove('hidden');
   playAgainBtn.classList.toggle('hidden', mySeat !== 0);
 }
+
+// إعادة ترتيب اللوح عند تغيير حجم الشاشة (دوران الجهاز مثلاً)
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (lastState) renderBoard(lastState.game.board);
+  }, 150);
+});
 
 // ===== بدء التشغيل =====
 (function init() {

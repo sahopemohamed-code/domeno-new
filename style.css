@@ -231,6 +231,15 @@ input[type="text"]:focus{
 }
 .error-msg.hidden{ display:none; }
 
+.credit{
+  margin-top: 18px;
+  text-align:center;
+  font-size: 11px;
+  letter-spacing:.5px;
+  color: rgba(255,255,255,.35);
+  direction: ltr;
+}
+
 /* ================= شاشة اللعب ================= */
 
 #game{ height:100%; }
@@ -386,15 +395,11 @@ input[type="text"]:focus{
 .board-area{
   position:absolute;
   inset: 78px 6px 6px 6px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
 }
 .board-scroll{
-  width:100%;
-  max-height: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
+  position:absolute;
+  inset: 0;
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width:none;
   direction: ltr;
@@ -402,18 +407,15 @@ input[type="text"]:focus{
 .board-scroll::-webkit-scrollbar{ display:none; }
 
 .board{
-  display:flex;
-  align-items:center;
-  gap: 2px;
-  padding: 10px 16px;
-  min-width: min-content;
-  margin: 0 auto;
-  width: max-content;
+  position:relative;
   direction: ltr;
 }
 
 .empty-board-hint{
   position:absolute;
+  top:50%; left:50%;
+  transform: translate(-50%, -50%);
+  width: max-content;
   font-size: 12px;
   color: var(--cream-2);
   opacity:.55;
