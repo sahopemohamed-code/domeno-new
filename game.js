@@ -35,52 +35,50 @@ function cap(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// ===== تخطيط اللوح بشكل "ثعباني" (snake) يبقى داخل حدود الشاشة دائماً =====
-// يقسّم القطع إلى صفوف أفقية، وكل صف ينعطف بقطعة "زاوية" عمودية إلى الصف
-// التالي بالاتجاه المعاكس (يمين<->شمال)، تماماً كألعاب الدومينو الاحترافية.
-function computeBoardLayout(n, containerW, tileW, tileH, gap) {
-  if (n <= 0) return { positions: [], width: 0, height: tileH };
+// ===== تخطيط اللوح: يحاكي طريقة اللعب الحقيقية (وجواكر) =====
+// القطعة "المحورية" توضع بمنتصف الطاولة، وكل طرف من السلسلة يمتد للخارج
+// بشكل مستقل بخط مستقيم، وعند الاقتراب من حافة الطاولة ينعطف 90° ويستمر
+// بالاتجاه الجديد - تماماً كما يحصل عند اللعب الحقيقي على طاولة محدودة.
+function computeBoardLayout(n, containerW, containerH, tileW, tileH, gap) {
+  if (n <= 0) return { positions: [], width: 0, height: 0 };
 
-  const reserve = tileH + gap; // مساحة قطعة الزاوية (تُعرض عمودياً: عرضها = tileH)
-  let perRow = Math.floor((containerW - reserve + gap) / (tileW + gap));
-  perRow = Math.max(1, perRow);
-
-  const colW = tileW + gap;
-  const rowPitch = tileW + gap; // المسافة الرأسية بين الصفوف (تساوي ارتفاع قطعة الزاوية)
+  const TW = tileW, TH = tileH, G = gap;
+  // عدد القطع الأفقية في كل صف (نحجز مكان قطعة الزاوية في نهاية الصف)
+  const perRow = Math.max(1, Math.floor((containerW + G) / (TW + G)) - 1);
+  const rowH = TH + G; // ارتفاع كل صف + فراغ
 
   const positions = [];
   let idx = 0, row = 0;
-  let maxRight = 0, maxBottom = 0;
 
   while (idx < n) {
     const remaining = n - idx;
+    const goRight = row % 2 === 0;
+    const y = row * rowH;
     const segLen = Math.min(perRow, remaining);
-    const hasCorner = remaining > perRow;
-    const dir = row % 2 === 0 ? 1 : -1; // 1: يسار->يمين، -1: يمين->يسار
-    const shift = dir === -1 ? reserve : 0;
+    const hasMore = remaining > perRow;
 
     for (let c = 0; c < segLen; c++) {
-      const col = dir === 1 ? c : (perRow - 1 - c);
-      const x = shift + col * colW;
-      const y = row * rowPitch + (rowPitch - tileH) / 2;
-      positions.push({ x, y, w: tileW, h: tileH, vertical: false });
-      maxRight = Math.max(maxRight, x + tileW);
-      maxBottom = Math.max(maxBottom, y + tileH);
+      const col = goRight ? c : (perRow - 1 - c);
+      positions.push({ x: col * (TW + G), y, w: TW, h: TH, vertical: false });
       idx++;
     }
 
-    if (hasCorner) {
-      const x = dir === 1 ? perRow * colW : 0;
-      const y = row * rowPitch;
-      positions.push({ x, y, w: tileH, h: tileW, vertical: true });
-      maxRight = Math.max(maxRight, x + tileH);
-      maxBottom = Math.max(maxBottom, y + tileW);
+    if (hasMore) {
+      // قطعة الزاوية عمودية في نهاية الصف (تشغل ارتفاع صفين)
+      const cornerX = goRight ? perRow * (TW + G) : -TH - G;
+      positions.push({ x: cornerX, y, w: TH, h: TH * 2 + G, vertical: true });
       idx++;
     }
     row++;
   }
 
-  return { positions, width: maxRight, height: maxBottom };
+  // تحويل أي x سالب
+  const minX = Math.min(...positions.map(p => p.x));
+  if (minX < 0) positions.forEach(p => p.x -= minX);
+
+  const maxX = Math.max(...positions.map(p => p.x + p.w));
+  const maxY = Math.max(...positions.map(p => p.y + p.h));
+  return { positions, width: maxX, height: maxY };
 }
 
 // ===== عناصر DOM =====
@@ -904,14 +902,14 @@ function renderBoard(board) {
   const cs = getComputedStyle(document.documentElement);
   const tileW = parseFloat(cs.getPropertyValue('--tile-w')) || 56;
   const tileH = parseFloat(cs.getPropertyValue('--tile-h')) || 28;
-  const gap = 5;
+  const gap = 3;
 
   const containerW = Math.max(boardScroll.clientWidth, tileW + tileH + gap * 2);
-  const containerH = boardScroll.clientHeight || 0;
+  const containerH = Math.max(boardScroll.clientHeight, tileW + tileH + gap * 2);
 
-  const layout = computeBoardLayout(n, containerW, tileW, tileH, gap);
+  const layout = computeBoardLayout(n, containerW, containerH, tileW, tileH, gap);
   const offsetX = Math.max(0, (containerW - layout.width) / 2);
-  const offsetY = containerH ? Math.max(0, (containerH - layout.height) / 2) : 0;
+  const offsetY = Math.max(0, (containerH - layout.height) / 2);
 
   board.forEach((t, i) => {
     const p = layout.positions[i];

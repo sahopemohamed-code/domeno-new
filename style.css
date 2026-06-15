@@ -26,8 +26,8 @@
   --font-display: 'Lalezar', cursive;
   --font-body: 'Tajawal', sans-serif;
 
-  --tile-w: 56px;
-  --tile-h: 28px;
+  --tile-w: 40px;
+  --tile-h: 20px;
 }
 
 *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -641,6 +641,6 @@ input[type="text"]:focus{
 
 /* ===== شاشات صغيرة جداً ===== */
 @media (max-width: 360px){
-  :root{ --tile-w: 50px; --tile-h: 25px; }
+  :root{ --tile-w: 36px; --tile-h: 18px; }
   .logo{ font-size: 36px; }
 }
