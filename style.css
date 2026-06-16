@@ -243,7 +243,6 @@ input[type="text"]:focus{
 /* ================= شاشة اللعب ================= */
 
 #game{ height:100%; display:flex; flex-direction:column; }
-.game-layout{ flex:1; min-height:0; }
 
 .topbar{
   display:flex;
@@ -311,9 +310,10 @@ input[type="text"]:focus{
 /* game-body: seat-left | table-center (flex column: seat-top + board + seat-bottom-spacer) | seat-right */
 
 .game-layout{
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
   overflow: hidden;
 }
 
