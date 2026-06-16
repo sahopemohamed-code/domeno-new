@@ -43,85 +43,115 @@ function computeBoardLayout(n, containerW, tileW, tileH, gap) {
   if (n <= 0) return { positions: [], width: 0, height: 0 };
 
   const TW = tileW, TH = tileH, G = gap;
-  const cx = Math.floor(containerW / 2);
-  const halfTW = Math.ceil(TW / 2);
   const rowH = TW + G;
+  const perRow = Math.max(1, Math.floor((containerW - 2*(TH+G)) / (TW+G)));
+  const colX = col => TH + G + col * (TW + G);
+  const mid = Math.floor(n / 2); // القطعة الوسطى في board
 
-  // عرض الجناح = المسافة من حافة القطعة الوسطى لحافة الشاشة مطروحاً منها G
-  const wingW = cx - halfTW - G;
-  // عدد القطع في كل صف من الجناح
-  const perRow = Math.max(1, Math.floor((wingW + G) / (TW + G)));
+  // نبني مصفوفة tileSlots بحيث tileSlots[mid] = القطعة الوسطى
+  // ونبني بما يكفي يميناً ويساراً لاستيعاب n قطعة
+  // tileSlots[0..n-1] تغطي board[0..n-1]
+  
+  // نحتاج slots من index 0 إلى n-1
+  // tileSlots[mid] يجب أن يكون في المنتصف الأفقي
+  // إذن نبني الشبكة بحيث:
+  // row=0 يبدأ من col الذي يجعل slot[mid] في midCol
 
-  // بناء جناح واحد — يبقى ضمن حدوده ولا يتجاوز المنتصف
-  // originX: حافة الجناح الأقرب للمنتصف
-  // dir: +1=يمتد يميناً، -1=يمتد يساراً
-  function buildWing(count, originX, dir) {
-    const pts = [];
-    let rem = count, row = 0;
+  // نحسب: في row=0 (يسار لليمين)، كم slot قبل الزاوية؟ perRow slots
+  // في row=1 (يمين ليسار)، كم slot بعد زاوية يسار؟ perRow slots
+  // slot thematic index:
+  // row=0: slots 0..perRow-1
+  // corner right: (لا يُحسب كـ slot)
+  // row=1: slots perRow..2*perRow-1 (لكن col معكوس)
+  // ...
 
-    while (rem > 0) {
-      const seg = Math.min(perRow, rem);
-      const hasCorner = rem > perRow;
-      // كل صف زوجي يمتد بعيداً عن المنتصف (dir الأصلي)
-      // كل صف فردي يعود نحو المنتصف (-dir) لكن يبقى في نصفه
-      const rowDir = (row % 2 === 0) ? dir : -dir;
-      const tileY = row * rowH + Math.round((TW - TH) / 2);
+  // يعني slot[i]: row = floor(i/perRow), posInRow = i % perRow
+  // goRight = (row % 2 === 0)
+  // col = goRight ? posInRow : perRow-1-posInRow
 
-      for (let c = 0; c < seg; c++) {
-        // نقطة البداية لكل صف:
-        // صف زوجي (dir+): يبدأ من originX ويمتد بعيداً
-        // صف فردي (-dir): يبدأ من الطرف البعيد ويعود نحو originX
-        let x;
-        if (rowDir === dir) {
-          // يمتد بعيداً: أول قطعة أقرب للمنتصف
-          x = dir > 0
-            ? originX + c * (TW + G)
-            : originX - c * (TW + G) - TW;
-        } else {
-          // يعود: أول قطعة أبعد عن المنتصف
-          x = dir > 0
-            ? originX + (perRow - 1 - c) * (TW + G)
-            : originX - (perRow - 1 - c) * (TW + G) - TW;
-        }
-        pts.push({ x, y: tileY, w: TW, h: TH, vertical: false, flipped: rowDir < 0 });
-        rem--;
-        if (rem <= 0) break;
-      }
+  // نريد slot[mid] في عمود midCol = floor(perRow/2)
+  // slot[mid]: row = floor(mid/perRow), posInRow = mid % perRow
+  // goRight للصف هذا = (floor(mid/perRow) % 2 === 0)
+  // col = goRight ? posInRow : perRow-1-posInRow
+  // نريده = floor(perRow/2)
 
-      if (hasCorner && rem > 0) {
-        // الزاوية دائماً في الطرف البعيد عن المنتصف
-        const cornerX = dir > 0
-          ? originX + perRow * (TW + G)       // أقصى يمين الجناح
-          : originX - perRow * (TW + G) - TH; // أقصى يسار الجناح
-        pts.push({ x: cornerX, y: row * rowH, w: TH, h: rowH, vertical: true, flipped: false });
-        rem--;
-      }
-      row++;
-    }
-    return pts;
-  }
+  // الحل: نحسب offset بحيث slot[mid+offset] = midCol
+  // وبعدين نعيد ترقيم السلسلة
 
-  const mid = Math.floor(n / 2);
-  const midX = cx - halfTW;
-  const midY = Math.round((TW - TH) / 2);
-
-  const rightCount = n - 1 - mid;
-  const leftCount  = mid;
-
-  const rightPts = buildWing(rightCount, cx + halfTW + G, +1);
-  const leftPts  = buildWing(leftCount,  cx - halfTW - G, -1);
+  // الأبسط: نبني tileSlots مباشرة
+  // نحدد أول قطعة = board[0]، وآخر = board[n-1]
+  // slot لكل قطعة بناءً على index في السلسلة الخطية
 
   const positions = new Array(n);
-  positions[mid] = { x: midX, y: midY, w: TW, h: TH, vertical: false, flipped: false };
-  rightPts.forEach((p, i) => { positions[mid + 1 + i] = p; });
-  leftPts.forEach((p, i)  => { positions[mid - 1 - i] = p; });
+  const corners = [];
+
+  for (let i = 0; i < n; i++) {
+    // distance من المنتصف
+    const d = i - mid;
+    // حوّل d لـ (row, col) في الشبكة المتعرجة
+    // شبكة: الصف 0 مركزه col=perRow/2
+    // نفكر في مصطلح linearIdx = d + midOffset
+    // حيث midOffset = موضع المنتصف في الشبكة الخطية
+
+    // slot الخطي = mid + d = i (طبيعي!)
+    // لكن نحتاج الصف الذي يحوي هذا الـ slot
+    
+    // أنت في slot i (0-based):
+    const row = Math.floor(i / perRow);
+    const posInRow = i % perRow;
+    const goRight = row % 2 === 0;
+    const col = goRight ? posInRow : perRow - 1 - posInRow;
+    const tileY = row * rowH + Math.round((TW - TH) / 2);
+    
+    positions[i] = { x: colX(col), y: tileY, w: TW, h: TH, vertical: false, flipped: !goRight };
+  }
+
+  // أضف الزوايا بين الصفوف
+  const numRows = Math.ceil(n / perRow);
+  for (let row = 0; row < numRows - 1; row++) {
+    const goRight = row % 2 === 0;
+    // زاوية يمين للصف الزوجي، يسار للفردي
+    if (goRight) {
+      corners.push({ x: colX(perRow), y: row * rowH, w: TH, h: rowH, vertical: true });
+    } else {
+      corners.push({ x: 0, y: row * rowH, w: TH, h: rowH, vertical: true });
+    }
+  }
+
+  // الآن: positions[mid] هو في أي عمود؟
+  // row=floor(mid/perRow), posInRow=mid%perRow, goRight=..., col=...
+  // لا يضمن أنه في المنتصف البصري
+  // لكن هذا لا يهم للصحة — المهم أن board[0]=أقصى يسار وboard[n-1]=أقصى يمين
+
+  // تحقق: board[0] يجب في col=0 (row=0, posInRow=0, goRight=true → col=0) ✓
+  // board[perRow-1] يجب في col=perRow-1 ✓
+  // board[perRow] في row=1, posInRow=0, goRight=false → col=perRow-1 (أقصى يمين صف1) ✓
+  // board[2*perRow-1] في row=1, posInRow=perRow-1, goRight=false → col=0 ✓
+  // ممتاز! الترتيب صحيح
+
+  // للتوسيط البصري: القطعة board[mid] تكون في المنتصف الفعلي للشاشة
+  // نُدوّر الـ positions بحيث positions[mid].x ≈ containerW/2
+  // يعني نضيف offset لكل x
+  const midPos = positions[mid];
+  if (midPos) {
+    const midTargetX = Math.floor((containerW - TW) / 2);
+    const offsetX = midTargetX - midPos.x;
+    if (offsetX !== 0) {
+      positions.forEach(p => { if(p) p.x += offsetX; });
+      corners.forEach(p => { p.x += offsetX; });
+    }
+  }
 
   // تحويل أي x سالب
-  const minX = Math.min(...positions.filter(Boolean).map(p => p.x));
-  if (minX < 0) positions.forEach(p => { if (p) p.x -= minX; });
+  const allPts = [...positions.filter(Boolean), ...corners];
+  const minX = Math.min(...allPts.map(p => p.x));
+  if (minX < 0) {
+    positions.forEach(p => { if(p) p.x -= minX; });
+    corners.forEach(p => { p.x -= minX; });
+  }
 
-  const maxY = Math.max(...positions.filter(Boolean).map(p => p.y + p.h));
-  return { positions, width: containerW, height: maxY };
+  const maxY = Math.max(...allPts.map(p => p.y + p.h));
+  return { positions, corners, width: containerW, height: maxY };
 }
 
 // ===== عناصر DOM =====
@@ -947,21 +977,33 @@ function renderBoard(board) {
   const tileH = parseFloat(cs.getPropertyValue('--tile-h')) || 28;
   const gap = 4;
 
-  const containerW = Math.max(boardScroll.clientWidth, tileW + tileH + gap * 2);
+  const containerW = Math.max(boardScroll.clientWidth, tileW * 3 + tileH * 2 + gap * 4);
   const containerH = Math.max(boardScroll.clientHeight, tileW + tileH + gap * 2);
 
   const layout = computeBoardLayout(n, containerW, tileW, tileH, gap);
-  const offsetX = Math.max(0, (containerW - layout.width) / 2);
-  const offsetY = 8; // القطع تبدأ من الأعلى دائماً
+  const offsetY = 8; // القطع تبدأ من الأعلى
 
+  // رسم القطع
   board.forEach((t, i) => {
     const p = layout.positions[i];
+    if (!p) return;
     const a = p.flipped ? t.b : t.a;
     const b = p.flipped ? t.a : t.b;
     const el = createTileElement(a, b, { orientation: p.vertical ? 'vertical' : 'horizontal' });
     el.style.position = 'absolute';
-    el.style.left = Math.round(offsetX + p.x) + 'px';
+    el.style.left = Math.round(p.x) + 'px';
     el.style.top = Math.round(offsetY + p.y) + 'px';
+    boardEl.appendChild(el);
+  });
+
+  // رسم الزوايا
+  (layout.corners || []).forEach(c => {
+    const el = createTileElement(0, 0, { orientation: 'vertical', extraClass: 'corner-tile' });
+    el.style.position = 'absolute';
+    el.style.left = Math.round(c.x) + 'px';
+    el.style.top = Math.round(offsetY + c.y) + 'px';
+    el.style.width = c.w + 'px';
+    el.style.height = c.h + 'px';
     boardEl.appendChild(el);
   });
 

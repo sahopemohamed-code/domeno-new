@@ -500,7 +500,13 @@ input[type="text"]:focus{
 .tile.horizontal .tile-half:first-child{ border-left: 1px solid rgba(0,0,0,.18); }
 .tile.vertical .tile-half:first-child{ border-top: 1px solid rgba(0,0,0,.18); }
 
-.pip{
+.tile.corner-tile{
+  background: linear-gradient(180deg, var(--cream), var(--cream-2));
+  border-radius: 3px;
+  pointer-events: none;
+}
+.tile.corner-tile .tile-half{ display:none; }
+
   width: 2.5px; height:2.5px;
   border-radius:50%;
   background: radial-gradient(circle at 35% 35%, #5a4a35, var(--ink));
