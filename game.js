@@ -40,118 +40,62 @@ function cap(str) {
 // بشكل مستقل بخط مستقيم، وعند الاقتراب من حافة الطاولة ينعطف 90° ويستمر
 // بالاتجاه الجديد - تماماً كما يحصل عند اللعب الحقيقي على طاولة محدودة.
 function computeBoardLayout(n, containerW, tileW, tileH, gap) {
-  if (n <= 0) return { positions: [], width: 0, height: 0 };
+  if (n <= 0) return { positions: [], corners: [], height: 0 };
 
   const TW = tileW, TH = tileH, G = gap;
+  const mid  = Math.floor(n / 2);
+  const cx   = Math.floor(containerW / 2);
   const rowH = TW + G;
-  const perRow = Math.max(1, Math.floor((containerW - 2*(TH+G)) / (TW+G)));
-  const colX = col => TH + G + col * (TW + G);
-  const mid = Math.floor(n / 2); // القطعة الوسطى في board
 
-  // نبني مصفوفة tileSlots بحيث tileSlots[mid] = القطعة الوسطى
-  // ونبني بما يكفي يميناً ويساراً لاستيعاب n قطعة
-  // tileSlots[0..n-1] تغطي board[0..n-1]
-  
-  // نحتاج slots من index 0 إلى n-1
-  // tileSlots[mid] يجب أن يكون في المنتصف الأفقي
-  // إذن نبني الشبكة بحيث:
-  // row=0 يبدأ من col الذي يجعل slot[mid] في midCol
+  const midRight = cx + Math.ceil(TW / 2);
+  const midLeft  = cx - Math.floor(TW / 2);
 
-  // نحسب: في row=0 (يسار لليمين)، كم slot قبل الزاوية؟ perRow slots
-  // في row=1 (يمين ليسار)، كم slot بعد زاوية يسار؟ perRow slots
-  // slot thematic index:
-  // row=0: slots 0..perRow-1
-  // corner right: (لا يُحسب كـ slot)
-  // row=1: slots perRow..2*perRow-1 (لكن col معكوس)
-  // ...
+  const armW   = containerW / 2 - Math.ceil(TW / 2) - TH - 2 * G;
+  const perArm = Math.max(1, Math.floor((armW + G) / (TW + G)));
 
-  // يعني slot[i]: row = floor(i/perRow), posInRow = i % perRow
-  // goRight = (row % 2 === 0)
-  // col = goRight ? posInRow : perRow-1-posInRow
+  const rightX = col => midRight + G + col * (TW + G);
+  const leftX  = col => midLeft  - G - col * (TW + G) - TW;
 
-  // نريد slot[mid] في عمود midCol = floor(perRow/2)
-  // slot[mid]: row = floor(mid/perRow), posInRow = mid % perRow
-  // goRight للصف هذا = (floor(mid/perRow) % 2 === 0)
-  // col = goRight ? posInRow : perRow-1-posInRow
-  // نريده = floor(perRow/2)
+  const positions = new Array(n).fill(null);
+  const corners   = [];
 
-  // الحل: نحسب offset بحيث slot[mid+offset] = midCol
-  // وبعدين نعيد ترقيم السلسلة
+  positions[mid] = { x: midLeft, y: Math.round((TW-TH)/2), w: TW, h: TH, flipped: false };
 
-  // الأبسط: نبني tileSlots مباشرة
-  // نحدد أول قطعة = board[0]، وآخر = board[n-1]
-  // slot لكل قطعة بناءً على index في السلسلة الخطية
+  function buildArm(indices, getX) {
+    let ai = 0, row = 0;
+    while (ai < indices.length) {
+      const seg     = Math.min(perArm, indices.length - ai);
+      const hasMore = indices.length - ai > perArm;
+      const goOut   = row % 2 === 0;
+      const tileY   = row * rowH + Math.round((TW-TH)/2);
 
-  const positions = new Array(n);
-  const corners = [];
-
-  for (let i = 0; i < n; i++) {
-    // distance من المنتصف
-    const d = i - mid;
-    // حوّل d لـ (row, col) في الشبكة المتعرجة
-    // شبكة: الصف 0 مركزه col=perRow/2
-    // نفكر في مصطلح linearIdx = d + midOffset
-    // حيث midOffset = موضع المنتصف في الشبكة الخطية
-
-    // slot الخطي = mid + d = i (طبيعي!)
-    // لكن نحتاج الصف الذي يحوي هذا الـ slot
-    
-    // أنت في slot i (0-based):
-    const row = Math.floor(i / perRow);
-    const posInRow = i % perRow;
-    const goRight = row % 2 === 0;
-    const col = goRight ? posInRow : perRow - 1 - posInRow;
-    const tileY = row * rowH + Math.round((TW - TH) / 2);
-    
-    positions[i] = { x: colX(col), y: tileY, w: TW, h: TH, vertical: false, flipped: !goRight };
-  }
-
-  // أضف الزوايا بين الصفوف
-  const numRows = Math.ceil(n / perRow);
-  for (let row = 0; row < numRows - 1; row++) {
-    const goRight = row % 2 === 0;
-    // زاوية يمين للصف الزوجي، يسار للفردي
-    if (goRight) {
-      corners.push({ x: colX(perRow), y: row * rowH, w: TH, h: rowH, vertical: true });
-    } else {
-      corners.push({ x: 0, y: row * rowH, w: TH, h: rowH, vertical: true });
+      for (let c = 0; c < seg; c++) {
+        const col = goOut ? c : (perArm - 1 - c);
+        positions[indices[ai]] = { x: getX(col), y: tileY, w: TW, h: TH, flipped: !goOut };
+        ai++;
+      }
+      if (hasMore) corners.push({ x: getX(perArm), y: row * rowH, w: TH, h: rowH });
+      row++;
     }
   }
 
-  // الآن: positions[mid] هو في أي عمود؟
-  // row=floor(mid/perRow), posInRow=mid%perRow, goRight=..., col=...
-  // لا يضمن أنه في المنتصف البصري
-  // لكن هذا لا يهم للصحة — المهم أن board[0]=أقصى يسار وboard[n-1]=أقصى يمين
+  const rightIdx = [];
+  for (let i = mid+1; i < n; i++) rightIdx.push(i);
+  buildArm(rightIdx, col => rightX(col));
 
-  // تحقق: board[0] يجب في col=0 (row=0, posInRow=0, goRight=true → col=0) ✓
-  // board[perRow-1] يجب في col=perRow-1 ✓
-  // board[perRow] في row=1, posInRow=0, goRight=false → col=perRow-1 (أقصى يمين صف1) ✓
-  // board[2*perRow-1] في row=1, posInRow=perRow-1, goRight=false → col=0 ✓
-  // ممتاز! الترتيب صحيح
+  const leftIdx = [];
+  for (let i = mid-1; i >= 0; i--) leftIdx.push(i);
+  buildArm(leftIdx, col => leftX(col));
 
-  // للتوسيط البصري: القطعة board[mid] تكون في المنتصف الفعلي للشاشة
-  // نُدوّر الـ positions بحيث positions[mid].x ≈ containerW/2
-  // يعني نضيف offset لكل x
-  const midPos = positions[mid];
-  if (midPos) {
-    const midTargetX = Math.floor((containerW - TW) / 2);
-    const offsetX = midTargetX - midPos.x;
-    if (offsetX !== 0) {
-      positions.forEach(p => { if(p) p.x += offsetX; });
-      corners.forEach(p => { p.x += offsetX; });
-    }
-  }
-
-  // تحويل أي x سالب
   const allPts = [...positions.filter(Boolean), ...corners];
-  const minX = Math.min(...allPts.map(p => p.x));
+  const minX   = Math.min(...allPts.map(p => p.x));
   if (minX < 0) {
     positions.forEach(p => { if(p) p.x -= minX; });
-    corners.forEach(p => { p.x -= minX; });
+    corners.forEach(c => { c.x -= minX; });
   }
 
   const maxY = Math.max(...allPts.map(p => p.y + p.h));
-  return { positions, corners, width: containerW, height: maxY };
+  return { positions, corners, height: maxY };
 }
 
 // ===== عناصر DOM =====

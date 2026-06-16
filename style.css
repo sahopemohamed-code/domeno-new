@@ -507,6 +507,7 @@ input[type="text"]:focus{
 }
 .tile.corner-tile .tile-half{ display:none; }
 
+.pip{
   width: 2.5px; height:2.5px;
   border-radius:50%;
   background: radial-gradient(circle at 35% 35%, #5a4a35, var(--ink));
