@@ -60,7 +60,7 @@ function computeBoardLayout(n, containerW, containerH, tileW, tileH, gap) {
 
     for (let c = 0; c < segLen; c++) {
       const col = goRight ? c : (perRow - 1 - c);
-      positions.push({ x: col * (TW + G), y, w: TW, h: TH, vertical: false });
+      positions.push({ x: col * (TW + G), y, w: TW, h: TH, vertical: false, flipped: !goRight });
       idx++;
     }
 
@@ -915,7 +915,10 @@ function renderBoard(board) {
 
   board.forEach((t, i) => {
     const p = layout.positions[i];
-    const el = createTileElement(t.a, t.b, { orientation: p.vertical ? 'vertical' : 'horizontal' });
+    // في الصفوف العكسية (goRight=false) نعكس a,b ليبقى الترتيب منطقياً
+    const a = p.flipped ? t.b : t.a;
+    const b = p.flipped ? t.a : t.b;
+    const el = createTileElement(a, b, { orientation: p.vertical ? 'vertical' : 'horizontal' });
     el.style.position = 'absolute';
     el.style.left = Math.round(offsetX + p.x) + 'px';
     el.style.top = Math.round(offsetY + p.y) + 'px';
@@ -938,7 +941,7 @@ function renderHand(game) {
     let extra = 'in-hand';
     if (playable) extra += ' playable';
     if (selectedTileIndex === i) extra += ' selected';
-    const el = createTileElement(tile[0], tile[1], { orientation: 'horizontal', extraClass: extra });
+    const el = createTileElement(tile[0], tile[1], { orientation: 'vertical', extraClass: extra });
     if (playable) {
       el.addEventListener('click', () => handleTileClick(i, move));
     }

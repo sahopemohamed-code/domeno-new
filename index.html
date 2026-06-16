@@ -60,81 +60,105 @@
   <!-- ===== شاشة اللعب ===== -->
   <div id="game" class="screen hidden">
 
-    <div class="topbar">
-      <button class="icon-btn" id="leaveBtn" title="خروج">✕</button>
-      <div class="score-pill team-a">
-        <span class="score-label">أنتم</span>
-        <span class="score-val" id="scoreA">0</span>
-      </div>
-      <div class="mid-info">
-        <button class="room-code" id="roomCodeDisplay" title="اضغط للنسخ">—</button>
-        <div class="round-info" id="roundInfo">جولة 1 · هدف 101</div>
-      </div>
-      <div class="score-pill team-b">
-        <span class="score-label">الخصم</span>
-        <span class="score-val" id="scoreB">0</span>
-      </div>
-      <div class="spacer"></div>
-    </div>
+    <div class="game-layout">
 
-    <div class="table">
-      <div class="seat seat-top" id="seatTop">
-        <div class="avatar-wrap">
-          <div class="avatar" id="avatarTop">🐯</div>
-          <div class="turn-ring"></div>
+      <!-- ===== الشريط العلوي ===== -->
+      <div class="topbar">
+        <button class="icon-btn" id="leaveBtn" title="خروج">✕</button>
+        <div class="score-pill team-a">
+          <span class="score-label">أنتم</span>
+          <span class="score-val" id="scoreA">0</span>
         </div>
-        <div class="seat-info">
-          <div class="seat-name" id="nameTop">—</div>
-          <div class="mini-hand" id="miniHandTop"></div>
+        <div class="mid-info">
+          <button class="room-code" id="roomCodeDisplay" title="اضغط للنسخ">—</button>
+          <div class="round-info" id="roundInfo">هدف 101</div>
         </div>
+        <div class="score-pill team-b">
+          <span class="score-label">الخصم</span>
+          <span class="score-val" id="scoreB">0</span>
+        </div>
+        <div class="spacer"></div>
       </div>
 
-      <div class="seat seat-left" id="seatLeft">
-        <div class="avatar-wrap">
-          <div class="avatar" id="avatarLeft">🐺</div>
-          <div class="turn-ring"></div>
+      <!-- ===== جسم اللعبة ===== -->
+      <div class="game-body">
+
+        <!-- مقعد اليسار -->
+        <div class="seat-col">
+          <div class="seat" id="seatLeft">
+            <div class="avatar-wrap">
+              <div class="avatar" id="avatarLeft">🐺</div>
+              <div class="turn-ring"></div>
+            </div>
+            <div class="seat-info">
+              <div class="seat-name" id="nameLeft">—</div>
+              <div class="mini-hand" id="miniHandLeft"></div>
+            </div>
+          </div>
         </div>
-        <div class="seat-info">
-          <div class="seat-name" id="nameLeft">—</div>
-          <div class="mini-hand vertical" id="miniHandLeft"></div>
+
+        <!-- الوسط: مقعد أعلى + طاولة -->
+        <div class="table-col">
+
+          <!-- مقعد أعلى -->
+          <div class="seat-row">
+            <div class="seat" id="seatTop">
+              <div class="avatar-wrap">
+                <div class="avatar" id="avatarTop">🐯</div>
+                <div class="turn-ring"></div>
+              </div>
+              <div class="seat-info">
+                <div class="seat-name" id="nameTop">—</div>
+                <div class="mini-hand h" id="miniHandTop"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- الطاولة الخضراء -->
+          <div class="table">
+            <div class="board-area">
+              <div class="board-scroll" id="boardScroll">
+                <div class="board" id="board"></div>
+              </div>
+              <div class="drop-zone left hidden" id="dropLeft">◀</div>
+              <div class="drop-zone right hidden" id="dropRight">▶</div>
+              <div class="empty-board-hint" id="emptyHint">اضغط "بدء اللعب" لتوزيع القطع</div>
+            </div>
+          </div>
+
         </div>
+
+        <!-- مقعد اليمين -->
+        <div class="seat-col">
+          <div class="seat" id="seatRight">
+            <div class="avatar-wrap">
+              <div class="avatar" id="avatarRight">🦊</div>
+              <div class="turn-ring"></div>
+            </div>
+            <div class="seat-info">
+              <div class="seat-name" id="nameRight">—</div>
+              <div class="mini-hand" id="miniHandRight"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <div class="seat seat-right" id="seatRight">
-        <div class="avatar-wrap">
-          <div class="avatar" id="avatarRight">🦊</div>
-          <div class="turn-ring"></div>
+      <!-- ===== منطقة اللاعب السفلية ===== -->
+      <div class="bottom-area">
+        <div class="my-row">
+          <div class="avatar-wrap">
+            <div class="avatar" id="avatarBottom">🦁</div>
+            <div class="turn-ring"></div>
+          </div>
+          <div class="seat-name" id="nameBottom">أنا</div>
+          <button class="btn-pass hidden" id="passBtn">تمرير</button>
+          <button class="btn-start hidden" id="startBtn">بدء اللعب</button>
         </div>
-        <div class="seat-info">
-          <div class="seat-name" id="nameRight">—</div>
-          <div class="mini-hand vertical" id="miniHandRight"></div>
+        <div class="hand-scroll" id="handScroll">
+          <div class="hand" id="hand"></div>
         </div>
       </div>
-
-      <div class="board-area">
-        <div class="board-scroll" id="boardScroll">
-          <div class="board" id="board"></div>
-        </div>
-        <div class="drop-zone left hidden" id="dropLeft">◀</div>
-        <div class="drop-zone right hidden" id="dropRight">▶</div>
-        <div class="empty-board-hint" id="emptyHint">اضغط "بدء اللعب" لتوزيع القطع</div>
-      </div>
-    </div>
-
-    <div class="bottom-area">
-      <div class="my-row">
-        <div class="avatar-wrap">
-          <div class="avatar" id="avatarBottom">🦁</div>
-          <div class="turn-ring"></div>
-        </div>
-        <div class="seat-name" id="nameBottom">أنا</div>
-        <button class="btn-pass hidden" id="passBtn">تمرير</button>
-        <button class="btn-start hidden" id="startBtn">بدء اللعب</button>
-      </div>
-      <div class="hand-scroll" id="handScroll">
-        <div class="hand" id="hand"></div>
-      </div>
-    </div>
 
     <!-- نافذة نتيجة الجولة -->
     <div class="modal-overlay hidden" id="roundModal">

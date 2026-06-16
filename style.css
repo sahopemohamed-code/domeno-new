@@ -242,7 +242,8 @@ input[type="text"]:focus{
 
 /* ================= شاشة اللعب ================= */
 
-#game{ height:100%; }
+#game{ height:100%; display:flex; flex-direction:column; }
+.game-layout{ flex:1; min-height:0; }
 
 .topbar{
   display:flex;
@@ -305,13 +306,60 @@ input[type="text"]:focus{
 .team-a .score-val{ color: var(--team-a); }
 .team-b .score-val{ color: var(--team-b); }
 
-/* ===== الطاولة ===== */
+/* ===== الطاولة - تخطيط جديد كامل ===== */
+/* البنية: game-layout (flex column) → topbar + game-body (flex row) + bottom-area */
+/* game-body: seat-left | table-center (flex column: seat-top + board + seat-bottom-spacer) | seat-right */
 
-.table{
-  position: relative;
+.game-layout{
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.game-body{
   flex: 1;
-  margin: 0 10px;
-  border-radius: 26px;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  min-height: 0;
+  gap: 0;
+}
+
+/* === مقعد اليسار === */
+.seat-col{
+  width: 70px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 4px;
+}
+
+/* === المنتصف (seat-top + table + فراغ مقعد أسفل) === */
+.table-col{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.seat-row{
+  height: 72px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* === الطاولة الخضراء === */
+.table{
+  flex: 1;
+  margin: 4px 0;
+  border-radius: 20px;
   background:
     radial-gradient(circle at 50% 38%, rgba(255,255,255,.05), transparent 60%),
     linear-gradient(180deg, var(--felt-1), var(--felt-2));
@@ -321,23 +369,16 @@ input[type="text"]:focus{
     inset 0 10px 40px rgba(0,0,0,.35),
     0 8px 24px rgba(0,0,0,.35);
   overflow: hidden;
+  position: relative;
   min-height: 0;
 }
 
-.seat{
-  position:absolute;
-  display:flex;
-  align-items:center;
-  gap: 8px;
-  z-index: 2;
-}
-.seat-top{ top: 10px; left: 50%; transform: translateX(-50%); flex-direction: column; }
-.seat-top .seat-info{ align-items:center; }
-.seat-left{ top: 50%; left: 8px; transform: translateY(-50%); flex-direction: column; }
-.seat-right{ top: 50%; right: 8px; transform: translateY(-50%); flex-direction: column-reverse; }
+/* اللاعبون لا يوجدون داخل الطاولة بعد الآن */
+.seat{ display:flex; align-items:center; gap:6px; }
+.seat-col .seat{ flex-direction: column; }
+.seat-row .seat{ flex-direction: column; }
 
-.seat-info{ display:flex; flex-direction:column; gap:4px; }
-.seat-left .seat-info, .seat-right .seat-info{ align-items:center; }
+.seat-info{ display:flex; flex-direction:column; gap:3px; align-items:center; }
 
 .avatar-wrap{ position:relative; width: 44px; height:44px; }
 .avatar{
@@ -367,34 +408,34 @@ input[type="text"]:focus{
 }
 
 .seat-name{
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--cream);
-  background: rgba(0,0,0,.35);
+  background: rgba(0,0,0,.45);
   border-radius: 6px;
-  padding: 2px 8px;
+  padding: 2px 6px;
   white-space: nowrap;
-  max-width: 90px;
+  max-width: 64px;
   overflow:hidden;
   text-overflow: ellipsis;
+  text-align: center;
 }
 .seat-name.discon{ color: var(--danger); }
 
-.mini-hand{ display:flex; gap:3px; }
-.mini-hand.vertical{ flex-direction:column; }
+.mini-hand{ display:flex; gap:3px; flex-direction: column; }
+.mini-hand.h{ flex-direction: row; }
 .mini-tile{
   width: 14px; height: 20px;
   border-radius: 3px;
   background: linear-gradient(180deg, #6b5530, #4a3a1f);
   border: 1px solid rgba(216,179,92,.5);
 }
-.mini-hand.vertical .mini-tile{ width:20px; height:14px; }
+.mini-hand.h .mini-tile{ width: 20px; height: 14px; }
 
-/* ===== منطقة اللوح ===== */
-
+/* === منطقة اللوح داخل الطاولة === */
 .board-area{
   position:absolute;
-  inset: 78px 6px 6px 6px;
+  inset: 6px;
 }
 .board-scroll{
   position:absolute;
@@ -405,7 +446,6 @@ input[type="text"]:focus{
   direction: ltr;
 }
 .board-scroll::-webkit-scrollbar{ display:none; }
-
 .board{
   position:relative;
   direction: ltr;
@@ -422,6 +462,8 @@ input[type="text"]:focus{
   text-align:center;
   pointer-events:none;
 }
+
+
 
 /* ===== قطع الدومينو ===== */
 
@@ -489,16 +531,16 @@ input[type="text"]:focus{
   overflow-x:auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width:none;
-  padding: 4px 0 2px;
+  padding: 4px 6px 2px;
 }
 .hand-scroll::-webkit-scrollbar{ display:none; }
 .hand{
   display:flex;
-  gap:6px;
-  padding: 0 6px;
-  min-height: calc(var(--tile-w) + 4px);
+  gap:8px;
+  align-items: flex-end;
   width: max-content;
   margin: 0 auto;
+  min-height: 54px;
 }
 
 .tile.playable{
@@ -512,13 +554,12 @@ input[type="text"]:focus{
 }
 .tile.in-hand{
   transition: transform .15s, box-shadow .15s;
-  --tile-w: 50px;
-  --tile-h: 25px;
-  width: var(--tile-w); /* يُعاد حساب الأبعاد */
 }
-.tile.in-hand.horizontal{ width: 50px; height: 25px; }
+/* قطع اليد عمودية: عرض 25px × ارتفاع 50px */
 .tile.in-hand.vertical{ width: 25px; height: 50px; }
-.tile.in-hand .tile-half{ width: 25px; height: 25px; }
+.tile.in-hand.vertical .tile-half{ width: 25px; height: 25px; }
+.tile.in-hand.horizontal{ width: 50px; height: 25px; }
+.tile.in-hand.horizontal .tile-half{ width: 25px; height: 25px; }
 
 /* مناطق إفلات القطعة عند الحاجة لاختيار الجهة */
 .drop-zone{
