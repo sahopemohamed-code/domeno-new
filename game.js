@@ -43,9 +43,10 @@ function computeBoardLayout(n, containerW, containerH, tileW, tileH, gap) {
   if (n <= 0) return { positions: [], width: 0, height: 0 };
 
   const TW = tileW, TH = tileH, G = gap;
-  // عدد القطع الأفقية في كل صف (نحجز مكان قطعة الزاوية في نهاية الصف)
-  const perRow = Math.max(1, Math.floor((containerW + G) / (TW + G)) - 1);
-  const rowH = TH + G; // ارتفاع كل صف + فراغ
+  // قطعة الزاوية أبعادها: عرض TH × ارتفاع TW (عمودية = نصفيها فوق بعض)
+  // الصف ارتفاعه TH، والزاوية عرضها TH — نحجزها في نهاية كل صف
+  const perRow = Math.max(1, Math.floor((containerW - TH - G + G) / (TW + G)));
+  const rowPitch = TW + G; // المسافة بين بداية صف وبداية الصف التالي (= ارتفاع الزاوية)
 
   const positions = [];
   let idx = 0, row = 0;
@@ -53,7 +54,7 @@ function computeBoardLayout(n, containerW, containerH, tileW, tileH, gap) {
   while (idx < n) {
     const remaining = n - idx;
     const goRight = row % 2 === 0;
-    const y = row * rowH;
+    const y = row * rowPitch + (rowPitch - TH) / 2; // توسيط القطعة الأفقية عمودياً داخل صفها
     const segLen = Math.min(perRow, remaining);
     const hasMore = remaining > perRow;
 
@@ -64,15 +65,16 @@ function computeBoardLayout(n, containerW, containerH, tileW, tileH, gap) {
     }
 
     if (hasMore) {
-      // قطعة الزاوية عمودية في نهاية الصف (تشغل ارتفاع صفين)
+      // الزاوية: عرضها TH وارتفاعها TW (قطعة عمودية تمتد من نهاية هذا الصف لبداية التالي)
       const cornerX = goRight ? perRow * (TW + G) : -TH - G;
-      positions.push({ x: cornerX, y, w: TH, h: TH * 2 + G, vertical: true });
+      const cornerY = row * rowPitch;
+      positions.push({ x: cornerX, y: cornerY, w: TH, h: TW, vertical: true });
       idx++;
     }
     row++;
   }
 
-  // تحويل أي x سالب
+  // تحويل أي x سالب للموجب
   const minX = Math.min(...positions.map(p => p.x));
   if (minX < 0) positions.forEach(p => p.x -= minX);
 
@@ -777,7 +779,7 @@ dropRight.addEventListener('click', () => {
 
 // ===== إرسال الحركات =====
 function sendPlay(index, side) {
-  sendAction({ type: 'playTile', tileIndex: index, side: side === 'first' ? null : side });
+  sendAction({ type: 'playTile', tileIndex: index, side });
   selectedTileIndex = null;
   showDropZones(false);
 }
@@ -810,7 +812,7 @@ function render(data) {
   roomCodeDisplay.textContent = roomData.code;
   scoreA.textContent = game.teamScores[teamMe];
   scoreB.textContent = game.teamScores[teamOpp];
-  roundInfo.textContent = `جولة ${game.round || 1} · هدف ${game.targetScore}`;
+  roundInfo.textContent = game.round > 0 ? `جولة ${game.round} · هدف ${game.targetScore}` : `هدف ${game.targetScore}`;
 
   // تعيين المقاعد حول الطاولة (الأسفل أنا، يمين/أعلى/يسار بترتيب الدور)
   const seatMap = {
