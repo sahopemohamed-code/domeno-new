@@ -39,56 +39,89 @@ function cap(str) {
 // القطعة "المحورية" توضع بمنتصف الطاولة، وكل طرف من السلسلة يمتد للخارج
 // بشكل مستقل بخط مستقيم، وعند الاقتراب من حافة الطاولة ينعطف 90° ويستمر
 // بالاتجاه الجديد - تماماً كما يحصل عند اللعب الحقيقي على طاولة محدودة.
-function computeBoardLayout(n, containerW, containerH, tileW, tileH, gap) {
+function computeBoardLayout(n, containerW, tileW, tileH, gap) {
   if (n <= 0) return { positions: [], width: 0, height: 0 };
 
   const TW = tileW, TH = tileH, G = gap;
-  // الزاوية عرضها TH، توضع في أقصى اليمين دائماً
-  // كلا الصفين يبدأ من x=0 وينتهي عند x = perRow*(TW+G)-G
-  // الزاوية x = perRow*(TW+G)
-  const rowStep = TW + G;
-  const cornerW = TH;
-  const perRow = Math.max(1, Math.floor((containerW - cornerW - G) / (TW + G)));
+  const cx = Math.floor(containerW / 2);
+  const halfTW = Math.ceil(TW / 2);
+  const rowH = TW + G;
 
-  const positions = [];
-  let idx = 0, row = 0;
+  // عرض الجناح = المسافة من حافة القطعة الوسطى لحافة الشاشة مطروحاً منها G
+  const wingW = cx - halfTW - G;
+  // عدد القطع في كل صف من الجناح
+  const perRow = Math.max(1, Math.floor((wingW + G) / (TW + G)));
 
-  while (idx < n) {
-    const remaining = n - idx;
-    const goRight = row % 2 === 0;
-    const segLen = Math.min(perRow, remaining);
-    const hasMore = remaining > perRow;
-    // توسيط القطعة الأفقية عمودياً داخل خانة ارتفاعها rowStep
-    const rowY = row * rowStep + Math.round((TW - TH) / 2);
+  // بناء جناح واحد — يبقى ضمن حدوده ولا يتجاوز المنتصف
+  // originX: حافة الجناح الأقرب للمنتصف
+  // dir: +1=يمتد يميناً، -1=يمتد يساراً
+  function buildWing(count, originX, dir) {
+    const pts = [];
+    let rem = count, row = 0;
 
-    for (let c = 0; c < segLen; c++) {
-      // كلا الصفين يبدأ من x=0، الفرق فقط في ترتيب القطع (يسار/يمين)
-      const col = goRight ? c : (perRow - 1 - c);
-      const x = col * (TW + G);
-      positions.push({ x, y: rowY, w: TW, h: TH, vertical: false, flipped: !goRight });
-      idx++;
+    while (rem > 0) {
+      const seg = Math.min(perRow, rem);
+      const hasCorner = rem > perRow;
+      // كل صف زوجي يمتد بعيداً عن المنتصف (dir الأصلي)
+      // كل صف فردي يعود نحو المنتصف (-dir) لكن يبقى في نصفه
+      const rowDir = (row % 2 === 0) ? dir : -dir;
+      const tileY = row * rowH + Math.round((TW - TH) / 2);
+
+      for (let c = 0; c < seg; c++) {
+        // نقطة البداية لكل صف:
+        // صف زوجي (dir+): يبدأ من originX ويمتد بعيداً
+        // صف فردي (-dir): يبدأ من الطرف البعيد ويعود نحو originX
+        let x;
+        if (rowDir === dir) {
+          // يمتد بعيداً: أول قطعة أقرب للمنتصف
+          x = dir > 0
+            ? originX + c * (TW + G)
+            : originX - c * (TW + G) - TW;
+        } else {
+          // يعود: أول قطعة أبعد عن المنتصف
+          x = dir > 0
+            ? originX + (perRow - 1 - c) * (TW + G)
+            : originX - (perRow - 1 - c) * (TW + G) - TW;
+        }
+        pts.push({ x, y: tileY, w: TW, h: TH, vertical: false, flipped: rowDir < 0 });
+        rem--;
+        if (rem <= 0) break;
+      }
+
+      if (hasCorner && rem > 0) {
+        // الزاوية دائماً في الطرف البعيد عن المنتصف
+        const cornerX = dir > 0
+          ? originX + perRow * (TW + G)       // أقصى يمين الجناح
+          : originX - perRow * (TW + G) - TH; // أقصى يسار الجناح
+        pts.push({ x: cornerX, y: row * rowH, w: TH, h: rowH, vertical: true, flipped: false });
+        rem--;
+      }
+      row++;
     }
-
-    if (hasMore) {
-      // الزاوية دائماً في أقصى اليمين
-      // الصف الزوجي (→) تنتهي عنده فتأتي الزاوية في يمينه ↓
-      // الصف الفردي (←) تبدأ منه فتكون الزاوية في يمينه أيضاً ↑
-      const cornerX = perRow * (TW + G);
-      const cornerY = row * rowStep;
-      positions.push({ x: cornerX, y: cornerY, w: cornerW, h: rowStep, vertical: true, flipped: false });
-      idx++;
-    }
-    row++;
+    return pts;
   }
 
-  // توسيط اللوح داخل الحاوية
-  const maxX = Math.max(...positions.map(p => p.x + p.w));
-  const maxY = Math.max(...positions.map(p => p.y + p.h));
-  const offX = Math.max(0, (containerW - maxX) / 2);
-  const offY = Math.max(0, (containerH - maxY) / 2);
-  positions.forEach(p => { p.x += offX; p.y += offY; });
+  const mid = Math.floor(n / 2);
+  const midX = cx - halfTW;
+  const midY = Math.round((TW - TH) / 2);
 
-  return { positions, width: maxX, height: maxY };
+  const rightCount = n - 1 - mid;
+  const leftCount  = mid;
+
+  const rightPts = buildWing(rightCount, cx + halfTW + G, +1);
+  const leftPts  = buildWing(leftCount,  cx - halfTW - G, -1);
+
+  const positions = new Array(n);
+  positions[mid] = { x: midX, y: midY, w: TW, h: TH, vertical: false, flipped: false };
+  rightPts.forEach((p, i) => { positions[mid + 1 + i] = p; });
+  leftPts.forEach((p, i)  => { positions[mid - 1 - i] = p; });
+
+  // تحويل أي x سالب
+  const minX = Math.min(...positions.filter(Boolean).map(p => p.x));
+  if (minX < 0) positions.forEach(p => { if (p) p.x -= minX; });
+
+  const maxY = Math.max(...positions.filter(Boolean).map(p => p.y + p.h));
+  return { positions, width: containerW, height: maxY };
 }
 
 // ===== عناصر DOM =====
@@ -917,13 +950,12 @@ function renderBoard(board) {
   const containerW = Math.max(boardScroll.clientWidth, tileW + tileH + gap * 2);
   const containerH = Math.max(boardScroll.clientHeight, tileW + tileH + gap * 2);
 
-  const layout = computeBoardLayout(n, containerW, containerH, tileW, tileH, gap);
+  const layout = computeBoardLayout(n, containerW, tileW, tileH, gap);
   const offsetX = Math.max(0, (containerW - layout.width) / 2);
-  const offsetY = Math.max(0, (containerH - layout.height) / 2);
+  const offsetY = 8; // القطع تبدأ من الأعلى دائماً
 
   board.forEach((t, i) => {
     const p = layout.positions[i];
-    // في الصفوف العكسية (goRight=false) نعكس a,b ليبقى الترتيب منطقياً
     const a = p.flipped ? t.b : t.a;
     const b = p.flipped ? t.a : t.b;
     const el = createTileElement(a, b, { orientation: p.vertical ? 'vertical' : 'horizontal' });
@@ -933,8 +965,8 @@ function renderBoard(board) {
     boardEl.appendChild(el);
   });
 
-  boardEl.style.width = Math.max(containerW, layout.width) + 'px';
-  boardEl.style.height = Math.max(containerH, layout.height) + 'px';
+  boardEl.style.width = containerW + 'px';
+  boardEl.style.height = Math.max(containerH, layout.height + offsetY + 8) + 'px';
 }
 
 function renderHand(game) {
