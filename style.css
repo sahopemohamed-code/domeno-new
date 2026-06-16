@@ -26,8 +26,8 @@
   --font-display: 'Lalezar', cursive;
   --font-body: 'Tajawal', sans-serif;
 
-  --tile-w: 40px;
-  --tile-h: 20px;
+  --tile-w: 32px;
+  --tile-h: 16px;
 }
 
 *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -328,7 +328,7 @@ input[type="text"]:focus{
 
 /* === مقعد اليسار === */
 .seat-col{
-  width: 70px;
+  width: 62px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -347,7 +347,7 @@ input[type="text"]:focus{
 }
 
 .seat-row{
-  height: 72px;
+  height: 64px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -501,7 +501,7 @@ input[type="text"]:focus{
 .tile.vertical .tile-half:first-child{ border-top: 1px solid rgba(0,0,0,.18); }
 
 .pip{
-  width: 3px; height:3px;
+  width: 2.5px; height:2.5px;
   border-radius:50%;
   background: radial-gradient(circle at 35% 35%, #5a4a35, var(--ink));
   align-self:center; justify-self:center;
@@ -556,10 +556,10 @@ input[type="text"]:focus{
   transition: transform .15s, box-shadow .15s;
 }
 /* قطع اليد عمودية: عرض 25px × ارتفاع 50px */
-.tile.in-hand.vertical{ width: 25px; height: 50px; }
-.tile.in-hand.vertical .tile-half{ width: 25px; height: 25px; }
-.tile.in-hand.horizontal{ width: 50px; height: 25px; }
-.tile.in-hand.horizontal .tile-half{ width: 25px; height: 25px; }
+.tile.in-hand.vertical{ width: 22px; height: 44px; }
+.tile.in-hand.vertical .tile-half{ width: 22px; height: 22px; }
+.tile.in-hand.horizontal{ width: 44px; height: 22px; }
+.tile.in-hand.horizontal .tile-half{ width: 22px; height: 22px; }
 
 /* مناطق إفلات القطعة عند الحاجة لاختيار الجهة */
 .drop-zone{
@@ -690,6 +690,6 @@ input[type="text"]:focus{
 
 /* ===== شاشات صغيرة جداً ===== */
 @media (max-width: 360px){
-  :root{ --tile-w: 36px; --tile-h: 18px; }
+  :root{ --tile-w: 28px; --tile-h: 14px; }
   .logo{ font-size: 36px; }
 }

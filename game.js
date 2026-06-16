@@ -43,10 +43,12 @@ function computeBoardLayout(n, containerW, containerH, tileW, tileH, gap) {
   if (n <= 0) return { positions: [], width: 0, height: 0 };
 
   const TW = tileW, TH = tileH, G = gap;
-  // قطعة الزاوية أبعادها: عرض TH × ارتفاع TW (عمودية = نصفيها فوق بعض)
-  // الصف ارتفاعه TH، والزاوية عرضها TH — نحجزها في نهاية كل صف
-  const perRow = Math.max(1, Math.floor((containerW - TH - G + G) / (TW + G)));
-  const rowPitch = TW + G; // المسافة بين بداية صف وبداية الصف التالي (= ارتفاع الزاوية)
+  // الزاوية عرضها TH، توضع في أقصى اليمين دائماً
+  // كلا الصفين يبدأ من x=0 وينتهي عند x = perRow*(TW+G)-G
+  // الزاوية x = perRow*(TW+G)
+  const rowStep = TW + G;
+  const cornerW = TH;
+  const perRow = Math.max(1, Math.floor((containerW - cornerW - G) / (TW + G)));
 
   const positions = [];
   let idx = 0, row = 0;
@@ -54,32 +56,38 @@ function computeBoardLayout(n, containerW, containerH, tileW, tileH, gap) {
   while (idx < n) {
     const remaining = n - idx;
     const goRight = row % 2 === 0;
-    const y = row * rowPitch + (rowPitch - TH) / 2; // توسيط القطعة الأفقية عمودياً داخل صفها
     const segLen = Math.min(perRow, remaining);
     const hasMore = remaining > perRow;
+    // توسيط القطعة الأفقية عمودياً داخل خانة ارتفاعها rowStep
+    const rowY = row * rowStep + Math.round((TW - TH) / 2);
 
     for (let c = 0; c < segLen; c++) {
+      // كلا الصفين يبدأ من x=0، الفرق فقط في ترتيب القطع (يسار/يمين)
       const col = goRight ? c : (perRow - 1 - c);
-      positions.push({ x: col * (TW + G), y, w: TW, h: TH, vertical: false, flipped: !goRight });
+      const x = col * (TW + G);
+      positions.push({ x, y: rowY, w: TW, h: TH, vertical: false, flipped: !goRight });
       idx++;
     }
 
     if (hasMore) {
-      // الزاوية: عرضها TH وارتفاعها TW (قطعة عمودية تمتد من نهاية هذا الصف لبداية التالي)
-      const cornerX = goRight ? perRow * (TW + G) : -TH - G;
-      const cornerY = row * rowPitch;
-      positions.push({ x: cornerX, y: cornerY, w: TH, h: TW, vertical: true });
+      // الزاوية دائماً في أقصى اليمين
+      // الصف الزوجي (→) تنتهي عنده فتأتي الزاوية في يمينه ↓
+      // الصف الفردي (←) تبدأ منه فتكون الزاوية في يمينه أيضاً ↑
+      const cornerX = perRow * (TW + G);
+      const cornerY = row * rowStep;
+      positions.push({ x: cornerX, y: cornerY, w: cornerW, h: rowStep, vertical: true, flipped: false });
       idx++;
     }
     row++;
   }
 
-  // تحويل أي x سالب للموجب
-  const minX = Math.min(...positions.map(p => p.x));
-  if (minX < 0) positions.forEach(p => p.x -= minX);
-
+  // توسيط اللوح داخل الحاوية
   const maxX = Math.max(...positions.map(p => p.x + p.w));
   const maxY = Math.max(...positions.map(p => p.y + p.h));
+  const offX = Math.max(0, (containerW - maxX) / 2);
+  const offY = Math.max(0, (containerH - maxY) / 2);
+  positions.forEach(p => { p.x += offX; p.y += offY; });
+
   return { positions, width: maxX, height: maxY };
 }
 
@@ -904,7 +912,7 @@ function renderBoard(board) {
   const cs = getComputedStyle(document.documentElement);
   const tileW = parseFloat(cs.getPropertyValue('--tile-w')) || 56;
   const tileH = parseFloat(cs.getPropertyValue('--tile-h')) || 28;
-  const gap = 3;
+  const gap = 4;
 
   const containerW = Math.max(boardScroll.clientWidth, tileW + tileH + gap * 2);
   const containerH = Math.max(boardScroll.clientHeight, tileW + tileH + gap * 2);
